@@ -1,9 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SpacedNotes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; background: #0b0b0c; color: #eaeaea; }
+      .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+      .topbar { display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+      .logo { font-weight: 800; letter-spacing:.2px; }
+      .btn { padding: 10px 14px; border-radius: 10px; border: 1px solid #2b2b2e; background:#18181b; color:#eaeaea; cursor:pointer; }
+      .btn.primary { background:#2563eb; border-color:#1e40af; }
+      .btn.success { background:#16a34a; border-color:#166534; }
+      .btn.ghost { background:transparent; }
+      .card { background:#111113; border:1px solid #222226; border-radius: 14px; padding: 16px; }
+      .muted { opacity:.7; }
+      .row { display:flex; gap:8px; flex-wrap:wrap; }
+      input[type=text] { width: 100%; padding: 12px; border-radius: 10px; border:1px solid #2b2b2e; background:#0e0e10; color:#eaeaea; }
+      .note { display:flex; align-items:center; justify-content: space-between; gap: 10px; padding: 10px; border-radius: 10px; border:1px dashed #2c2c30; }
+      .badge { padding: 3px 8px; border-radius:999px; font-weight:700; color:#111; background:#fbbf24; }
+      a { color:#60a5fa; text-decoration:none; }
+      a:hover { text-decoration:underline; }
+      .ql-container.ql-snow { border:1px solid #2b2b2e; border-radius: 8px; }
+      .ql-toolbar.ql-snow { border:1px solid #2b2b2e; border-radius: 8px; }
+      .prose { max-width: 75ch; line-height:1.6; }
+      .grid { display:grid; gap:12px; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
