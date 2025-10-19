@@ -31,24 +31,32 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="card">
-      <h2 style={{ marginTop: 0 }}>Bem-vindo 👋</h2>
-      <p className="muted">
-        Escreva notas de estudo e revise com repetição espaçada. Simples e eficiente.
-      </p>
+  <div className="card">
+    <h2 style={{ marginTop: 0 }}>Bem-vindo 👋</h2>
+    <p className="muted">
+      Escreva notas de estudo e revise com repetição espaçada. Simples e eficiente.
+    </p>
 
-      {next && (
-        <p style={{ marginTop: 12 }}>
+    {next && (
+      <div style={{ marginTop: 12 }}>
+        <p style={{ margin: 0 }}>
           🕒 <strong>Próxima revisão {timeUntil(next)}</strong>
         </p>
-      )}
-
-      <div className="row" style={{ marginTop: 12 }}>
-        <Link className="btn primary" to="/new">➕ Criar Nota</Link>
-        <Link className="btn success" to="/review">
-          🔔 Revisar Notas {due > 0 && <span className="badge">{due}</span>}
-        </Link>
+        <p className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+          ({next.toDate
+            ? next.toDate().toLocaleString('pt-BR')
+            : new Date(next).toLocaleString('pt-BR')}
+          )
+        </p>
       </div>
+    )}
+
+    <div className="row" style={{ marginTop: 12 }}>
+      <Link className="btn primary" to="/new">➕ Criar Nota</Link>
+      <Link className="btn success" to="/review">
+        🔔 Revisar Notas {due > 0 && <span className="badge">{due}</span>}
+      </Link>
     </div>
-  )
+  </div>
+)
 }

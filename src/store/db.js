@@ -11,9 +11,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  Timestamp
 } from 'firebase/firestore'
-
 import { nextReviewDate, STAGES } from '../lib/spaced'
 
 const NOTES = 'notes'
@@ -24,7 +22,7 @@ function assertDB() {
   }
 }
 
-// 🟢 Cria nova nota
+// 🟢 Cria uma nova nota
 export async function addNote({ title, content }) {
   assertDB()
   const next = nextReviewDate(0)
@@ -34,65 +32,62 @@ export async function addNote({ title, content }) {
     createdAt: serverTimestamp(),
     reviewStage: 0,
     nextReview: next,
-    mastered: false
+    mastered: false,
   })
 }
 
-// 🟣 Inscreve para ouvir notas que já estão no prazo
+// 🟢 Escuta notas que precisam ser revistas
 export function subscribeDueNotes(cb) {
   assertDB()
 
-  const now = new Date()
-  // Corrige para UTC e converte para Timestamp do Firestore
-  const offsetNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000)
-  const firestoreNow = Timestamp.fromDate(offsetNow)
-
   const q = query(
     collection(db, NOTES),
     where('mastered', '==', false),
-    where('nextReview', '<=', firestoreNow),
     orderBy('nextReview', 'asc')
   )
 
-  return onSnapshot(q, (snap) => {
-    const notes = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data()
-    }))
+  let latestNotes = []
 
-    // Log útil para depuração
-    console.log('🕒 Horário atual local:', now.toLocaleString())
-    notes.forEach((n) => {
-      console.log(
-        '📘',
-        n.title,
-        '| Revisão em:',
-        n.nextReview?.toDate?.().toLocaleString?.() || n.nextReview
-      )
+  const unsub = onSnapshot(q, (snap) => {
+    latestNotes = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }))
+    // reavaliar imediatamente quando o snapshot mudar
+    checkDueAndNotify()
+  })
+
+  function checkDueAndNotify() {
+    const now = new Date()
+    console.log('📅 Hora local (checagem):', now.toLocaleString())
+
+    const dueNotes = latestNotes.filter((n) => {
+      const next = n.nextReview?.toDate ? n.nextReview.toDate() : (n.nextReview ? new Date(n.nextReview) : null)
+      return next && next <= now
     })
 
-    cb(notes)
-  })
+    console.log(`🧩 Total de notas encontradas: ${latestNotes.length}`)
+    console.log(`⏰ Notas vencidas para revisão: ${dueNotes.length}`)
+
+    cb(dueNotes)
+  }
+
+  // timer para detectar notas que vencem com a passagem do tempo
+  const timer = setInterval(checkDueAndNotify, 15000)
+
+  // retorna função de cleanup
+  return () => {
+    unsub()
+    clearInterval(timer)
+  }
 }
 
-// 🧮 Conta quantas notas estão no prazo
+// 🟢 Conta quantas notas estão prontas pra revisão
 export function getDueCount(cb) {
-  assertDB()
-
-  const now = new Date()
-  const offsetNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000)
-  const firestoreNow = Timestamp.fromDate(offsetNow)
-
-  const q = query(
-    collection(db, NOTES),
-    where('mastered', '==', false),
-    where('nextReview', '<=', firestoreNow)
-  )
-
-  return onSnapshot(q, (snap) => cb(snap.size))
+  return subscribeDueNotes((list) => cb(list.length))
 }
 
-// 🔍 Busca nota por ID
+// 🟢 Busca uma nota específica
 export async function getNoteById(id) {
   assertDB()
   const ref = doc(db, NOTES, id)
@@ -100,7 +95,7 @@ export async function getNoteById(id) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null
 }
 
-// ✅ Finaliza uma revisão e agenda a próxima
+// 🟢 Atualiza nota após revisão
 export async function finalizeReview(note) {
   assertDB()
   const ref = doc(db, NOTES, note.id)
@@ -109,11 +104,11 @@ export async function finalizeReview(note) {
   await updateDoc(ref, {
     reviewStage: nextStage,
     mastered: isMastered,
-    nextReview: isMastered ? null : nextReviewDate(nextStage)
+    nextReview: isMastered ? null : nextReviewDate(nextStage),
   })
 }
 
-// ❌ Apaga nota
+// 🟢 Deleta nota
 export async function deleteNote(id) {
   assertDB()
   await deleteDoc(doc(db, NOTES, id))
