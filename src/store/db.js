@@ -25,13 +25,13 @@ function assertDB() {
 // 🟢 Cria uma nova nota
 export async function addNote({ title, content }) {
   assertDB()
-  const next = nextReviewDate(0)
+  const next = nextReviewDate(0) // Já retorna um Timestamp do Firestore
   await addDoc(collection(db, NOTES), {
     title,
     content,
     createdAt: serverTimestamp(),
     reviewStage: 0,
-    nextReview: next,
+    nextReview: next, // Usa o Timestamp diretamente
     mastered: false,
   })
 }
@@ -63,11 +63,17 @@ export function subscribeDueNotes(cb) {
 
     const dueNotes = latestNotes.filter((n) => {
       const next = n.nextReview?.toDate ? n.nextReview.toDate() : (n.nextReview ? new Date(n.nextReview) : null)
+
+      console.log(`Nota: ${n.title}, nextReview: ${next}, now: ${now}`); // Adicione este log
+
       return next && next <= now
     })
 
     console.log(`🧩 Total de notas encontradas: ${latestNotes.length}`)
     console.log(`⏰ Notas vencidas para revisão: ${dueNotes.length}`)
+
+    // Adicione este log para verificar a ordenação
+    console.log("Notas ordenadas por nextReview:", dueNotes.map(n => ({ title: n.title, nextReview: n.nextReview })))
 
     cb(dueNotes)
   }

@@ -9,6 +9,9 @@ export function nextReviewDate(stageIdx) {
   const dt = new Date()
   dt.setDate(dt.getDate() + days)
   
-  // Retorna no formato Timestamp para funcionar bem no Firestore
-  return Timestamp.fromDate(dt)
+  return Timestamp.fromDate(dt) // Retorna um Timestamp do Firestore
 }
+
+// Exemplo de uso:
+// const nextReviewDate = nextReviewDate(0) // Próxima revisão para o estágio 0
+// console.log(nextReviewDate) // 2023-04-05T00:00:00.000Z

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getDueCount } from '../store/db'
 import { timeUntil } from '../lib/timeUntil'
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore"
 import { db } from '../store/firebase'
 
 export default function Home() {
@@ -12,51 +12,65 @@ export default function Home() {
   useEffect(() => {
     const unsub = getDueCount(setDue)
 
-    // Buscar a nota com a próxima revisão mais próxima
     async function fetchNext() {
-      const snap = await getDocs(collection(db, 'notes'))
-      const notes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      const future = notes.filter(n => n.nextReview)
+      // Busca todas as notas não masterizadas, ordenadas por nextReview
+      const q = query(
+        collection(db, 'notes'),
+        where('mastered', '==', false),
+        orderBy('nextReview', 'asc')
+      )
+      
+      const snap = await getDocs(q)
+      const notes = snap.docs.map(d => ({ 
+        id: d.id, 
+        ...d.data(),
+        nextReview: d.data().nextReview?.toDate?.() || new Date(d.data().nextReview)
+      }))
 
-      if (future.length > 0) {
-        const nextReview = future.sort(
-          (a, b) => new Date(a.nextReview) - new Date(b.nextReview)
-        )[0].nextReview
-        setNext(nextReview)
+      // Encontra a próxima nota a ser revisada
+      if (notes.length > 0) {
+        const now = new Date()
+        const nextNote = notes.find(n => n.nextReview > now) || notes[0]
+        setNext(nextNote.nextReview)
       }
     }
 
+    // Busca inicial
     fetchNext()
-    return () => unsub && unsub()
+    
+    // Atualiza a cada minuto
+    const timer = setInterval(fetchNext, 60000)
+    
+    return () => {
+      unsub?.()
+      clearInterval(timer)
+    }
   }, [])
 
   return (
-  <div className="card">
-    <h2 style={{ marginTop: 0 }}>Bem-vindo 👋</h2>
-    <p className="muted">
-      Escreva notas de estudo e revise com repetição espaçada. Simples e eficiente.
-    </p>
+    <div className="card">
+      <h2 style={{ marginTop: 0 }}>Bem-vindo 👋</h2>
+      <p className="muted">
+        Escreva notas de estudo e revise com repetição espaçada. Simples e eficiente.
+      </p>
 
-    {next && (
-      <div style={{ marginTop: 12 }}>
-        <p style={{ margin: 0 }}>
-          🕒 <strong>Próxima revisão {timeUntil(next)}</strong>
-        </p>
-        <p className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-          ({next.toDate
-            ? next.toDate().toLocaleString('pt-BR')
-            : new Date(next).toLocaleString('pt-BR')}
-          )
-        </p>
+      {next && (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ margin: 0 }}>
+            🕒 <strong>Próxima revisão {timeUntil(next)}</strong>
+          </p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+            ({next.toLocaleString('pt-BR')})
+          </p>
+        </div>
+      )}
+
+      <div className="row" style={{ marginTop: 12 }}>
+        <Link className="btn primary" to="/new">➕ Criar Nota</Link>
+        <Link className="btn success" to="/review">
+          🔔 Revisar Notas {due > 0 && <span className="badge">{due}</span>}
+        </Link>
       </div>
-    )}
-
-    <div className="row" style={{ marginTop: 12 }}>
-      <Link className="btn primary" to="/new">➕ Criar Nota</Link>
-      <Link className="btn success" to="/review">
-        🔔 Revisar Notas {due > 0 && <span className="badge">{due}</span>}
-      </Link>
     </div>
-  </div>
-)
+  )
 }
